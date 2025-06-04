@@ -7,7 +7,7 @@ use goblin::elf::dynamic::{
     DF_1_NOW, DF_1_PIE, DF_BIND_NOW, DT_RPATH, DT_RUNPATH,
 };
 use goblin::elf::header::ET_DYN;
-use goblin::elf::program_header::{PF_X, PT_GNU_RELRO, PT_GNU_STACK};
+use goblin::elf::program_header::{PT_GNU_RELRO, PT_GNU_STACK};
 #[cfg(feature = "disassembly")]
 use goblin::elf::section_header::{SHF_ALLOC, SHF_EXECINSTR, SHT_PROGBITS};
 use goblin::elf::Elf;
@@ -99,7 +99,7 @@ impl fmt::Display for Nx {
 
 
 /// Position Independent Executable mode: `None`, `DSO`, or `PIE`
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum PIE {
     None,
     DSO,
@@ -134,7 +134,7 @@ impl fmt::Display for PIE {
 }
 
 /// Fortification status: `Full`, `Partial`, `None` or `Undecidable`
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum Fortify {
     Full,
     Partial,
@@ -567,10 +567,7 @@ impl Properties for Elf<'_> {
         }
         for header in &self.program_headers {
             if header.p_type == PT_GNU_STACK {
-                if PF_X != header.p_flags & PF_X {
-                    return Nx::Enabled;
-                }
-                break;
+                return Nx::Enabled;
             }
         }
         return Nx::Disabled;
