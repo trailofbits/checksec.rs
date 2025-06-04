@@ -228,7 +228,7 @@ impl CheckSecResults {
         let fortify = match (fortified, fortifiable) {
             (0, 0) => Fortify::Undecidable, 
             (f, v) if f == v => Fortify::Full,
-            (f, v) if f == 0 => Fortify::None,
+            (f, _) if f == 0 => Fortify::None,
             (f, v) if f < v => Fortify::Partial,
             _ => Fortify::Undecidable, // This case should never happen
         };

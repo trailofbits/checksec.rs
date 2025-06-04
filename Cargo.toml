@@ -42,6 +42,7 @@ scroll_derive = "0.11.0"
 serde = {version = "1.0.145", features = ["derive"]}
 serde_derive = "1.0.145"
 serde_json = "1.0.86"
+serde-wasm-bindgen = "0.4"
 sysinfo = "0.28.2"
 
 [target.'cfg(target_os="windows")'.dependencies]
@@ -61,6 +62,7 @@ xattr = {version = "1.0.0", optional = true}
 [lib]
 name = "checksec"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "checksec"

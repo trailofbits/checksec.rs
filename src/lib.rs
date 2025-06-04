@@ -44,8 +44,10 @@
 //! `*CheckSecResults` structs.
 //!
 
-use goblin::{error, Object};
+use wasm_bindgen::prelude::*;
+use goblin::{Object};
 use goblin::mach::Mach;
+use serde_derive::{Deserialize, Serialize};
 
 #[cfg(feature = "disassembly")]
 pub mod disassembly;
@@ -63,29 +65,40 @@ pub mod pe;
 #[macro_use]
 pub mod shared;
 
+#[derive(Serialize, Deserialize)]
 pub enum BinResults {
     Elf(elf::CheckSecResults),
     Pe(pe::CheckSecResults),
     Macho(macho::CheckSecResults),
 }
 
-pub fn checksec (buffer: &Vec<u8>) -> error::Result<BinResults> {
-    match Object::parse(&buffer)? {
-        Object::Elf(elf) => {
+#[wasm_bindgen]
+pub fn checksec (buffer: &[u8]) -> Result<JsValue, JsValue> {
+    match checksec_core(buffer) {
+        Ok(result) => Ok(serde_wasm_bindgen::to_value(&result)?),
+        Err(result) => Err(serde_wasm_bindgen::to_value(&result)?),
+    }
+} 
+
+
+pub fn checksec_core (buffer: &[u8]) -> Result<BinResults, String> {
+    match Object::parse(&buffer){
+        Ok(Object::Elf(elf)) => {
             let result = elf::CheckSecResults::parse(&elf, &buffer);
             Ok(BinResults::Elf(result))
         },
-        Object::PE(pe) => {
+        Ok(Object::PE(pe)) => {
             let result = pe::CheckSecResults::parse(&pe, &buffer);
             Ok(BinResults::Pe(result))
         },
-        Object::Mach(mach) => match mach {
+        Ok(Object::Mach(mach)) => match mach {
             Mach::Binary(mach) => {
                 let result = macho::CheckSecResults::parse(&mach); 
                 Ok(BinResults::Macho(result))
             }
-            _ => { Err(error::Error::Malformed("fat binaries currently not supported".into())) }
+            _ => { Err("fat binaries currently not supported".into()) }
         },
-        _ => {  Err(error::Error::Malformed("unsupported file type".into())) }
+        Err(res) => {Err(res.to_string())},
+        _ => {  Err("unsupported file type".into()) }
     }
 }
