@@ -44,6 +44,9 @@
 //! `*CheckSecResults` structs.
 //!
 
+use goblin::{error, Object};
+use goblin::mach::Mach;
+
 #[cfg(feature = "disassembly")]
 pub mod disassembly;
 #[cfg(feature = "elf")]
@@ -59,3 +62,30 @@ pub mod pe;
 #[cfg(feature = "shared")]
 #[macro_use]
 pub mod shared;
+
+pub enum BinResults {
+    Elf(elf::CheckSecResults),
+    Pe(pe::CheckSecResults),
+    Macho(macho::CheckSecResults),
+}
+
+pub fn checksec (buffer: &Vec<u8>) -> error::Result<BinResults> {
+    match Object::parse(&buffer)? {
+        Object::Elf(elf) => {
+            let result = elf::CheckSecResults::parse(&elf, &buffer);
+            Ok(BinResults::Elf(result))
+        },
+        Object::PE(pe) => {
+            let result = pe::CheckSecResults::parse(&pe, &buffer);
+            Ok(BinResults::Pe(result))
+        },
+        Object::Mach(mach) => match mach {
+            Mach::Binary(mach) => {
+                let result = macho::CheckSecResults::parse(&mach); 
+                Ok(BinResults::Macho(result))
+            }
+            _ => { Err(error::Error::Malformed("fat binaries currently not supported".into())) }
+        },
+        _ => {  Err(error::Error::Malformed("unsupported file type".into())) }
+    }
+}
