@@ -63,6 +63,41 @@ impl fmt::Display for Relro {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+pub enum Nx {
+    Na,
+    Enabled,
+    Disabled,
+}
+
+impl fmt::Display for Nx {
+    #[cfg(not(feature = "color"))]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:<4}",
+            match *self {
+                Self::Na => "N/A",
+                Self::Enabled => "NX Enabled",
+                Self::Disabled => "NX Disabled",
+            }
+        )
+    }
+    #[cfg(feature = "color")]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:<4}",
+            match *self {
+                Self::Na => "N/A".yellow(),
+                Self::Disabled => "NX Disabled".red(),
+                Self::Enabled => "NX Enabled".green(),
+            }
+        )
+    }
+}
+
+
 /// Position Independent Executable mode: `None`, `DSO`, or `PIE`
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum PIE {
@@ -171,7 +206,7 @@ pub struct CheckSecResults {
     /// Fortifiable functions
     pub fortifiable: u32,
     /// No Execute
-    pub nx: bool,
+    pub nx: Nx,
     /// Position Inpendent Executable (*CFLAGS=*`-pie -fPIE`)
     pub pie: PIE,
     /// Relocation Read-Only
@@ -258,7 +293,7 @@ impl fmt::Display for CheckSecResults {
             "Fortifiable:".bold(),
             self.fortifiable,
             "NX:".bold(),
-            colorize_bool!(self.nx),
+            self.nx,
             "PIE:".bold(),
             self.pie,
             "Relro:".bold(),
@@ -303,7 +338,7 @@ pub trait Properties {
     /// counts fortified and fortifiable symbols from dynstrtab
     fn has_fortified(&self) -> (u32, u32);
     /// check `p_flags` of the `PT_GNU_STACK` ELF header
-    fn has_nx(&self) -> bool;
+    fn has_nx(&self) -> Nx;
     /// check `d_val` of `DT_FLAGS`/`DT_FLAGS_1` of the `PT_DYN ELF` header
     fn has_pie(&self) -> PIE;
     /// check `d_val` is `DF_BIND_NOW` for `DT_FLAGS`/`DT_FLAGS_1` of the
@@ -526,16 +561,19 @@ impl Properties for Elf<'_> {
             .collect()
     }
     */
-    fn has_nx(&self) -> bool {
+    fn has_nx(&self) -> Nx {
+        if self.program_headers.is_empty(){
+            return Nx::Na;
+        }
         for header in &self.program_headers {
             if header.p_type == PT_GNU_STACK {
                 if PF_X != header.p_flags & PF_X {
-                    return true;
+                    return Nx::Enabled;
                 }
                 break;
             }
         }
-        false
+        return Nx::Disabled;
     }
     fn has_pie(&self) -> PIE {
         if self.header.e_type == ET_DYN {
