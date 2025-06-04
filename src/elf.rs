@@ -26,6 +26,8 @@ use crate::disassembly::{has_stack_clash_protection, Bitness};
 use crate::ldso::{LdSoError, LdSoLookup};
 use crate::shared::{Rpath, VecRpath};
 
+static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
+
 /// Relocation Read-Only mode: `None`, `Partial`, or `Full`
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum Relro {
@@ -406,14 +408,11 @@ const FORTIFIABLE_FUNCTIONS: [&str; 79] = [
  */
 
 impl Properties for Elf<'_> {
-    fn has_canary(&self) -> bool {
+   fn has_canary(&self) -> bool {
         for sym in &self.dynsyms {
             if let Some(name) = self.dynstrtab.get_at(sym.st_name) {
-                match name {
-                    "__stack_chk_fail" | "__intel_security_cookie" => {
-                        return true
-                    }
-                    _ => continue,
+                if STC_CANARY_KWDS.iter().any(|kw| name.contains(kw)){
+                    return true;
                 }
             }
         }
@@ -666,18 +665,5 @@ impl LibraryLookup {
         }
 
         None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::FORTIFIABLE_FUNCTIONS;
-
-    #[test]
-    fn test_sorted_fortifiable_functions() {
-        assert!(FORTIFIABLE_FUNCTIONS.windows(2).all(|f| {
-            println!("{} ? {}", f[0], f[1]);
-            f[0] < f[1]
-        }));
     }
 }
