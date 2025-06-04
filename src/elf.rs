@@ -6,8 +6,8 @@ use either::Either;
 use goblin::elf::dynamic::{
     DF_1_NOW, DF_1_PIE, DF_BIND_NOW, DT_RPATH, DT_RUNPATH,
 };
-use goblin::elf::header::ET_DYN;
-use goblin::elf::program_header::{PT_GNU_RELRO, PT_GNU_STACK};
+use goblin::elf::header::{ET_DYN, ET_REL};
+use goblin::elf::program_header::{PT_GNU_RELRO, PT_GNU_STACK, PF_X};
 #[cfg(feature = "disassembly")]
 use goblin::elf::section_header::{SHF_ALLOC, SHF_EXECINSTR, SHT_PROGBITS};
 use goblin::elf::Elf;
@@ -571,7 +571,10 @@ impl Properties for Elf<'_> {
         }
         for header in &self.program_headers {
             if header.p_type == PT_GNU_STACK {
-                return Nx::Enabled;
+                if PF_X != header.p_flags & PF_X {
+                    return Nx::Enabled;
+                }
+                break;
             }
         }
         return Nx::Disabled;
@@ -595,7 +598,7 @@ impl Properties for Elf<'_> {
             if header.p_type == PT_GNU_RELRO {
                 if let Some(dynamic) = &self.dynamic {
                     if DF_BIND_NOW & dynamic.info.flags == DF_BIND_NOW
-                        && DF_1_NOW & dynamic.info.flags_1 == DF_1_NOW
+                        || DF_1_NOW & dynamic.info.flags_1 == DF_1_NOW // binary not guaranteed to have both flags set. If either DF_BIND_NOW or DF_1_NOW are set, is is full Relro, as both flags disable lazy 
                     {
                         return Relro::Full;
                     }
