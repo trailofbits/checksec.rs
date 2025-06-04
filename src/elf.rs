@@ -103,6 +103,7 @@ impl fmt::Display for Nx {
 pub enum PIE {
     None,
     DSO,
+    REL,
     PIE,
 }
 
@@ -115,6 +116,7 @@ impl fmt::Display for PIE {
             match *self {
                 Self::None => "None",
                 Self::DSO => "DSO",
+                Self::REL => "REL",
                 Self::PIE => "Full",
             }
         )
@@ -127,6 +129,7 @@ impl fmt::Display for PIE {
             match *self {
                 Self::None => "None".red(),
                 Self::DSO => "DSO".yellow(),
+                Self::REL => "REL".yellow(),
                 Self::PIE => "Full".green(),
             }
         )
@@ -223,10 +226,11 @@ impl CheckSecResults {
     pub fn parse(elf: &Elf, bytes: &[u8]) -> Self {
         let (fortified, fortifiable) = elf.has_fortified();
         let fortify = match (fortified, fortifiable) {
-            (1.., 0) => Fortify::Full,
-            (1.., 1..) => Fortify::Partial,
-            (0, 1..) => Fortify::None,
-            (0, 0) => Fortify::Undecidable,
+            (0, 0) => Fortify::Undecidable, 
+            (f, v) if f == v => Fortify::Full,
+            (f, v) if f == 0 => Fortify::None,
+            (f, v) if f < v => Fortify::Partial,
+            _ => Fortify::Undecidable, // This case should never happen
         };
         Self {
             canary: elf.has_canary(),
@@ -580,6 +584,9 @@ impl Properties for Elf<'_> {
                 }
             }
             return PIE::DSO;
+        }
+        if self.header.e_type == ET_REL {
+            return PIE::REL;
         }
         PIE::None
     }
