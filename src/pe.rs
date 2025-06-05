@@ -305,9 +305,9 @@ pub struct CheckSecResults {
     /// Control Flow Guard (`/guard:cf`)
     pub cfg: bool,
     /// Common Language Runtime *(.NET Framework)*
-    pub clr: bool,
+    pub dotnet: bool,
     /// Data Execution Prevention
-    pub dep: bool,
+    pub nx: bool,
     /// Dynamic Base
     pub dynamic_base: bool,
     /// Force Integrity (`/INTEGRITYCHECK`)
@@ -332,8 +332,8 @@ impl CheckSecResults {
             aslr: pe.has_aslr(),
             authenticode: pe.has_authenticode(buffer),
             cfg: pe.has_cfg(),
-            clr: pe.has_clr(),
-            dep: pe.has_dep(),
+            dotnet: pe.has_dotnet(),
+            nx: pe.has_nx(),
             dynamic_base: pe.has_dynamic_base(),
             force_integrity: pe.has_force_integrity(),
             gs: pe.has_gs(buffer),
@@ -351,14 +351,14 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "ASLR: {} Authenticode: {} CFG: {} CLR: {} DEP: {} \
+            "ASLR: {} Authenticode: {} CFG: {} .NET: {} NX: {} \
             Dynamic Base: {} Force Integrity: {} GS: {} \
             High Entropy VA: {} Isolation: {} RFG: {} SafeSEH: {} SEH: {}",
             self.aslr,
             self.authenticode,
             self.cfg,
-            self.clr,
-            self.dep,
+            self.dotnet,
+            self.nx,
             self.dynamic_base,
             self.force_integrity,
             self.gs,
@@ -382,10 +382,10 @@ impl fmt::Display for CheckSecResults {
             colorize_bool!(self.authenticode),
             "CFG:".bold(),
             colorize_bool!(self.cfg),
-            "CLR:".bold(),
-            colorize_bool!(self.clr),
-            "DEP:".bold(),
-            colorize_bool!(self.dep),
+            ".NET:".bold(),
+            colorize_bool!(self.dotnet),
+            "NX:".bold(),
+            colorize_bool!(self.nx),
             "Dynamic Base:".bold(),
             colorize_bool!(self.dynamic_base),
             "Force Integrity:".bold(),
@@ -452,10 +452,10 @@ pub trait Properties {
     fn has_cfg(&self) -> bool;
     /// check for Common Language Runtime header within the
     /// `IMAGE_OPTIONAL_HEADER32/64`
-    fn has_clr(&self) -> bool;
+    fn has_dotnet(&self) -> bool;
     /// check for `IMAGE_DLLCHARACTERISTICS_NX_COMPAT` *(0x0100)* in
     /// `DllCharacteristics` within the `IMAGE_OPTIONAL_HEADER32/64`
-    fn has_dep(&self) -> bool;
+    fn has_nx(&self) -> bool;
     /// check for `IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE` *(0x0040)* in
     /// `DllCharacteristics` within the `IMAGE_OPTIONAL_HEADER32/64`
     fn has_dynamic_base(&self) -> bool;
@@ -546,7 +546,7 @@ impl Properties for PE<'_> {
         }
         false
     }
-    fn has_clr(&self) -> bool {
+    fn has_dotnet(&self) -> bool {
         if let Some(optional_header) = self.header.optional_header {
             if optional_header
                 .data_directories
@@ -558,7 +558,7 @@ impl Properties for PE<'_> {
         }
         false
     }
-    fn has_dep(&self) -> bool {
+    fn has_nx(&self) -> bool {
         if let Some(optional_header) = self.header.optional_header {
             let dllcharacteristics: u16 =
                 optional_header.windows_fields.dll_characteristics;
