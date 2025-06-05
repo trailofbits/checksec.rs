@@ -27,6 +27,27 @@ use crate::ldso::{LdSoError, LdSoLookup};
 use crate::shared::{Rpath, VecRpath};
 
 static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+struct SymbolCount{count: usize}
+
+impl fmt::Display for SymbolCount {
+    #[cfg(not(feature = "color"))]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:<5}", self.count)
+    }
+
+    #[cfg(feature = "color")]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:<5}",
+            match self.count {
+                0 => format!("{}", self.count).green(),
+                _ => format!("{}", self.count).red(),
+            }
+        )
+    }
+}
 
 /// Relocation Read-Only mode: `None`, `Partial`, or `Full`
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -220,6 +241,8 @@ pub struct CheckSecResults {
     pub runpath: VecRpath,
     /// Linked dynamic libraries
     pub dynlibs: Vec<String>,
+    // number of symbols
+    pub symbol_count: SymbolCount,
 }
 impl CheckSecResults {
     #[must_use]
@@ -250,6 +273,7 @@ impl CheckSecResults {
                 .iter()
                 .map(std::string::ToString::to_string)
                 .collect(),
+            symbol_count: elf.symbol_count(),
         }
     }
 }
@@ -261,7 +285,7 @@ impl fmt::Display for CheckSecResults {
         write!(
             f,
             "Canary: {} CFI: {} SafeStack: {} StackClash: {} Fortify: {} Fortified: {:2} \
-            Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {}",
+            Fortifiable: {:2} NX: {} PIE: {} Relro: {} RPATH: {} RUNPATH: {} Symbols: {}",
             self.canary,
             self.clang_cfi,
             self.clang_safestack,
@@ -273,7 +297,8 @@ impl fmt::Display for CheckSecResults {
             self.pie,
             self.relro,
             self.rpath,
-            self.runpath
+            self.runpath,
+            self.symbols
         )
     }
     #[cfg(feature = "color")]
@@ -281,7 +306,7 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {:2} {} {:2} {} {} {} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {} {} {} {:2} {} {:2} {} {} {} {} {} {} {} {} {} {} {} {}",
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "CFI:".bold(),
@@ -305,7 +330,9 @@ impl fmt::Display for CheckSecResults {
             "RPATH:".bold(),
             self.rpath,
             "RUNPATH:".bold(),
-            self.runpath
+            self.runpath,
+            "Symbols".bold(),
+            self.symbol_count
         )
     }
 }
@@ -356,6 +383,8 @@ pub trait Properties {
     fn has_runpath(&self) -> VecRpath;
     /// return the corresponding string from dynstrtab for a given `d_tag`
     fn get_dynstr_by_tag(&self, tag: u64) -> Option<&str>;
+    // return the total number of symbols in the binary
+    fn symbol_count(&self) -> SymbolCount;
 }
 
 // readelf -s -W /lib/x86_64-linux-gnu/libc.so.6 | grep _chk
@@ -619,6 +648,9 @@ impl Properties for Elf<'_> {
             }
         }
         VecRpath::new(vec![Rpath::None])
+    }
+    fn symbol_count(&self) -> SymbolCount {
+        return SymbolCount { count: self.syms.len() };
     }
     fn has_runpath(&self) -> VecRpath {
         if self.dynamic.is_some() {
