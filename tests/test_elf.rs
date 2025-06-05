@@ -165,14 +165,99 @@ fn test_nx_enabled(){
 }
 
 #[test]
-fn test_rpath_enabled(){
-    let buf = file_to_buf("./tests/binaries/elf/fszero".into());
+fn test_rpath_exists(){
+    let buf = file_to_buf("./tests/binaries/elf/rpath".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
-        let rpath_vec = shared::VecRpath::new(vec![shared::Rpath::YesRW("./".into())]);
+        let rpath_val = shared::Rpath::Yes("./".into());
+        let rpath_vec = shared::VecRpath::new(vec![rpath_val.clone()]);
         assert_eq!(elf_result.rpath.len(), rpath_vec.len());
-        // TODO: Check internal values
+        assert_eq!(elf_result.rpath[0], rpath_val);
     }
 }
+
+#[test]
+fn test_rpath_none(){
+    let buf = file_to_buf("./tests/binaries/elf/fszero".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        let rpath_val = shared::Rpath::None;
+        let rpath_vec = shared::VecRpath::new(vec![rpath_val.clone()]);
+        assert_eq!(elf_result.rpath.len(), rpath_vec.len());
+        assert_eq!(elf_result.rpath[0], rpath_val);
+    }
+}
+
+#[test]
+fn test_runpath_exists(){
+    let buf = file_to_buf("./tests/binaries/elf/runpath".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        let runpath_val = shared::Rpath::Yes("./".into());
+        let runpath_vec = shared::VecRpath::new(vec![runpath_val.clone()]);
+        assert_eq!(elf_result.rpath.len(), runpath_vec.len());
+        assert_eq!(elf_result.runpath[0], runpath_val);
+    }
+}
+
+#[test]
+fn test_runpath_none(){
+    let buf = file_to_buf("./tests/binaries/elf/sstack".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        let runpath_val = shared::Rpath::None;
+        let runpath_vec = shared::VecRpath::new(vec![runpath_val.clone()]);
+        assert_eq!(elf_result.rpath.len(), runpath_vec.len());
+        assert_eq!(elf_result.runpath[0], runpath_val);
+    }
+}
+
+#[test]
+fn test_symbol_count(){
+    let buf = file_to_buf("./tests/binaries/elf/sstack".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        assert_eq!(*elf_result.symbol_count, 87);
+    }
+}
+
+#[test]
+fn test_no_symbols(){
+    let buf = file_to_buf("./tests/binaries/elf/all".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        assert_eq!(*elf_result.symbol_count, 0);
+    }
+}
+
+#[test]
+fn test_clang_cfi_exists(){
+    let buf = file_to_buf("./tests/binaries/elf/cfi".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        assert_eq!(elf_result.clang_cfi, true);
+    }
+}
+
+#[test]
+fn test_no_clang_cfi(){
+    let buf = file_to_buf("./tests/binaries/elf/dso.so".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        assert_eq!(elf_result.clang_cfi, false);
+    }
+}
+
+#[test]
+fn test_clang_safestack_exists(){
+    let buf = file_to_buf("./tests/binaries/elf/sstack".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        assert_eq!(elf_result.clang_safestack, true);
+    }
+}
+
+#[test]
+fn test_no_clang_safestack(){
+    let buf = file_to_buf("./tests/binaries/elf/partial".into());
+    if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
+        assert_eq!(elf_result.clang_safestack, false);
+    }
+}
+
+//TODO: Add further testing for stack clash?
+
 
 
 

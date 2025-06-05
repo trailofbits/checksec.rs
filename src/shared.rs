@@ -6,7 +6,7 @@ use std::fmt;
 use std::ops::Deref;
 
 /// Split contents of `DT_RPATH`/`DT_RUNPATH` or @rpath entries
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub enum Rpath {
     None,
     Yes(String),

@@ -3,6 +3,7 @@
 use colored::Colorize;
 #[cfg(target_os = "linux")]
 use either::Either;
+use std::ops::Deref;
 use goblin::elf::dynamic::{
     DF_1_NOW, DF_1_PIE, DF_BIND_NOW, DT_RPATH, DT_RUNPATH,
 };
@@ -28,7 +29,15 @@ use crate::shared::{Rpath, VecRpath};
 
 static STC_CANARY_KWDS: [&str; 3] = ["__stack_chk_fail", "__stack_chk_guard", "__intel_security_cookie"];
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-struct SymbolCount{count: usize}
+pub struct SymbolCount{count: usize}
+
+impl Deref for SymbolCount {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.count // or &self.0 if using tuple struct
+    }
+}
 
 impl fmt::Display for SymbolCount {
     #[cfg(not(feature = "color"))]
@@ -306,7 +315,7 @@ impl fmt::Display for CheckSecResults {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} {} {} {} {} {} {} {} {} {} {} {:2} {} {:2} {} {} {} {} {} {} {} {} {} {} {} {}",
+            "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
             "Canary:".bold(),
             colorize_bool!(self.canary),
             "CFI:".bold(),
