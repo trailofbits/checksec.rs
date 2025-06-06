@@ -20,7 +20,7 @@ fn file_to_buf(filename: String) -> Vec<u8>{
 // Mach-O related tests
 #[test]
 fn test_is_macho(){
-    let buf = file_to_buf("./tests/binaries/Mach-O/pie".into());
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
     if let Ok(BinResults::Macho(_)) = checksec_core(&buf) {
     }
     else{
@@ -30,7 +30,7 @@ fn test_is_macho(){
 
 #[test]
 fn test_has_PIE(){
-    let buf = file_to_buf("./tests/binaries/Mach-O/pie".into());
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.pie, true);
     }
@@ -46,7 +46,7 @@ fn test_no_PIE(){
 
 #[test]
 fn test_has_arc(){
-    let buf = file_to_buf("./tests/binaries/Mach-O/arc_and_canary".into());
+    let buf = file_to_buf("./tests/binaries/Mach-O/arc_enabled".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.arc, true);
     }
@@ -54,7 +54,7 @@ fn test_has_arc(){
 
 #[test]
 fn test_no_arc(){
-    let buf = file_to_buf("./tests/binaries/Mach-O/fszero_cl".into());
+    let buf = file_to_buf("./tests/binaries/Mach-O/no_canary".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.arc, false);
     }
@@ -62,7 +62,7 @@ fn test_no_arc(){
 
 #[test]
 fn test_has_canary(){
-    let buf = file_to_buf("./tests/binaries/Mach-O/arc_and_canary".into());
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.canary, true);
     }
@@ -70,11 +70,29 @@ fn test_has_canary(){
 
 #[test]
 fn test_no_canary(){
-    let buf = file_to_buf("./tests/binaries/Mach-O/fszero_cl".into());
+    let buf = file_to_buf("./tests/binaries/Mach-O/no_canary".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.canary, false);
     }
 }
+
+#[test]
+fn test_has_codesig(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/arc_enabled".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.code_signature, true);
+    }
+}
+
+#[test]
+fn test_no_codesig(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/nosig".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.code_signature, false);
+    }
+}
+
+
 
 
 
