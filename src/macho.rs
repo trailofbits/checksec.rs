@@ -179,25 +179,14 @@ pub trait Properties {
 }
 impl Properties for MachO<'_> {
     fn has_arc(&self) -> bool {
-        if let Ok(imports) = self.imports() {
-            for import in &imports {
-                if import.name == "_objc_release" {
-                    return true;
-                }
-            }
-        }
-        false
+        self.symbols()
+        .flatten()
+        .any(|(name, _)| name == "_objc_release" || name == "_objc_alloc")
     }
     fn has_canary(&self) -> bool {
-        if let Ok(imports) = self.imports() {
-            for import in &imports {
-                match import.name {
-                    "___stack_chk_fail" | "___stack_chk_guard" => return true,
-                    _ => continue,
-                }
-            }
-        }
-        false
+        self.symbols()
+        .flatten()
+        .any(|(name, _)| name == "___stack_chk_fail" || name == "___stack_chk_guard")
     }
     fn has_code_signature(&self) -> bool {
         for loadcmd in &self.load_commands {
