@@ -23,6 +23,7 @@ const IMAGE_DLLCHARACTERISTICS_NX_COMPAT: u16 = 0x0100;
 const IMAGE_DLLCHARACTERISTICS_NO_ISOLATION: u16 = 0x0200;
 const IMAGE_DLLCHARACTERISTICS_NO_SEH: u16 = 0x0400;
 const IMAGE_DLLCHARACTERISTICS_GUARD_CF: u16 = 0x4000;
+const IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT: u32 = 0x0001;
 
 // stored in `IMAGE_LOAD_CONFIG_DIRECTORY64`
 const IMAGE_GUARD_RF_INSTRUMENTED: u32 = 0x0002_0000;
@@ -231,7 +232,7 @@ fn get_load_config_val(
 }
 
 /// Address Space Layout Randomization: `None`, `DYNBASE`, or `HIGHENTROPYVA`
-#[derive(Clone, Deserialize, Serialize, Debug)]
+#[derive(Clone, Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub enum ASLR {
     None,
     DynamicBase,
@@ -324,6 +325,8 @@ pub struct CheckSecResults {
     pub safeseh: bool,
     /// Structured Exception Handler
     pub seh: bool,
+    // CET Compatible
+    pub cet: bool,
 }
 impl CheckSecResults {
     #[must_use]
@@ -342,6 +345,7 @@ impl CheckSecResults {
             rfg: pe.has_rfg(buffer),
             safeseh: pe.has_safe_seh(buffer),
             seh: pe.has_seh(),
+            cet: pe.is_cet_compat()
         }
     }
 }
@@ -498,6 +502,9 @@ pub trait Properties {
     /// check `IMAGE_DLLCHARACTERISTICS_NO_SEH` from the
     /// `IMAGE_OPTIONAL_HEADER32/64`
     fn has_seh(&self) -> bool;
+    /// check `IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT` from the
+    /// `IMAGE_OPTIONAL_HEADER32/64`
+    fn is_cet_compat(&self) -> bool;
 }
 impl Properties for PE<'_> {
     fn has_aslr(&self) -> ASLR {
@@ -686,6 +693,20 @@ impl Properties for PE<'_> {
                     dllcharacteristics & IMAGE_DLLCHARACTERISTICS_NO_SEH,
                     x if x == 0
                 )
+            }
+            _ => false,
+        }
+    }
+    fn is_cet_compat(&self) -> bool {
+         match &self.debug_data {
+            Some(debug_data) => {
+                match debug_data.ex_dll_characteristics_info {
+                    Some(dllcharacteristics) => {
+                    println!("{}", IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT & dllcharacteristics.characteristics_ex);
+                    (dllcharacteristics.characteristics_ex & IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT) != 0
+                    }
+                    _ => false,
+                }
             }
             _ => false,
         }
