@@ -4,6 +4,7 @@ use colored::Colorize;
 use goblin::mach::load_command::CommandVariant;
 use goblin::mach::MachO;
 use serde::{Deserialize, Serialize};
+use crate::shared::{Rpath, VecRpath};
 use std::fmt;
 
 #[cfg(feature = "color")]
@@ -56,7 +57,7 @@ pub struct CheckSecResults {
     pub restrict: bool,
     /// Load Command @rpath
     //rpath: VecRpath,
-    pub rpath: bool,
+    pub rpath: VecRpath,
 }
 impl CheckSecResults {
     #[must_use]
@@ -127,8 +128,7 @@ impl fmt::Display for CheckSecResults {
             "Restrict:".bold(),
             colorize_bool!(self.restrict),
             "RPath:".bold(),
-            //self.rpath
-            colorize_bool!(self.rpath)
+            self.rpath
         )
     }
 }
@@ -175,7 +175,7 @@ pub trait Properties {
     fn has_restrict(&self) -> bool;
     //fn has_rpath(&self) -> VecRpath;
     /// check for `RPath` in load commands
-    fn has_rpath(&self) -> bool;
+    fn has_rpath(&self) -> VecRpath;
 }
 impl Properties for MachO<'_> {
     fn has_arc(&self) -> bool {
@@ -253,18 +253,14 @@ impl Properties for MachO<'_> {
         }
         false
     }
-    //fn has_rpath(&self) -> VecRpath {
-    fn has_rpath(&self) -> bool {
-        // simply check for existence of @rpath command for now
-        // parse out rpath entries similar to elf later
-        // paths separated by `;` instead of `:` like the elf counterpart
-        for loadcmd in &self.load_commands {
-            if let CommandVariant::Rpath(_) = loadcmd.command {
-                return true;
-                //return VecRpath::new(vec![Rpath::Yes("true".to_string())]);
-            }
+    fn has_rpath(&self) -> VecRpath {
+        let mut paths = Vec::new();
+        for &rpath in &self.rpaths {
+            paths.push(Rpath::Yes(rpath.into()));
         }
-        //VecRpath::new(vec![Rpath::None])
-        false
+        if paths.is_empty(){
+            return VecRpath::new(vec![Rpath::None]);
+        }
+        VecRpath::new(paths)
     }
 }

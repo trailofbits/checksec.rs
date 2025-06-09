@@ -92,6 +92,100 @@ fn test_no_codesig(){
     }
 }
 
+// TODO: Find a binary that has encryption
+
+#[test]
+fn test_not_encrypted(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/nosig".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.code_signature, false);
+    }
+}
+
+#[test]
+fn test_has_fortify(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.fortify, true);
+    }
+}
+
+#[test]
+fn test_fortified_count(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.fortified, 1);
+    }
+}
+
+
+#[test]
+fn test_not_fortified(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/no_fortify".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.fortify, false);
+    }
+}
+
+
+#[test]
+fn test_NX_stack(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.nx_stack, true);
+    }
+}
+
+// TODO: Find a binary with executable stack
+
+#[test]
+fn test_X_heap(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.nx_heap, false);
+    }
+}
+
+// TODO: Find a binary with non-executable heap
+
+#[test]
+fn test_no_restrict(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.restrict, false);
+    }
+}
+
+#[test]
+fn test_restricted(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/restrict".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        assert_eq!(macho_result.restrict, true);
+    }
+}
+
+#[test]
+fn test_no_rpath(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/restrict".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        let runpath_vec = shared::VecRpath::new(vec![shared::Rpath::None]);
+        assert_eq!(macho_result.rpath.len(), runpath_vec.len());
+        assert_eq!(macho_result.rpath[0], shared::Rpath::None);
+    }
+}
+
+#[test]
+fn test_rpath(){
+    let buf = file_to_buf("./tests/binaries/Mach-O/runpaths".into());
+    if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
+        let runpath_vec = shared::VecRpath::new(vec![shared::Rpath::Yes("@executable_path/lib".into()), shared::Rpath::Yes("./src".into())]);
+        assert_eq!(macho_result.rpath.len(), runpath_vec.len());
+        assert_eq!(macho_result.rpath[0], shared::Rpath::Yes("@executable_path/lib".into()));
+        assert_eq!(macho_result.rpath[1], shared::Rpath::Yes("./src".into()));
+    }
+}
+
+
 
 
 
