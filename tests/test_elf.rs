@@ -1,21 +1,6 @@
-use std::process;
-use std::path::Path;
-use std::fs;
-
-use checksec::{elf, shared, checksec_core, BinResults};
-
-// util function to convert file contents to buffer of bytes
-fn file_to_buf(filename: String) -> Vec<u8>{
-    let path = Path::new(&filename);
-    if let Ok(buf) = fs::read(path){
-        return buf;
-    }
-    else{
-        println!("reading of provided file path failed, test suite is misconfigured");
-        process::exit(1)
-    }
-}
-
+use checksec::{elf, shared, checksec_core, shared::BinResults};
+mod utils;
+use utils::file_to_buf;
 
 // Elf-related tests
 #[test]
@@ -34,6 +19,9 @@ fn test_w_canary(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.canary, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -41,6 +29,9 @@ fn test_w_no_canary(){
     let buf = file_to_buf("./tests/binaries/elf/cfi".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.canary, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -50,6 +41,9 @@ fn test_partial_relro(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.relro, elf::Relro::Partial);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -57,6 +51,9 @@ fn test_no_relro(){
     let buf = file_to_buf("./tests/binaries/elf/nolibc_cl".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.relro, elf::Relro::None);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -66,6 +63,9 @@ fn test_full_relro(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.relro, elf::Relro::Full);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -73,6 +73,9 @@ fn test_PIE_enabled(){
     let buf = file_to_buf("./tests/binaries/elf/partial".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.pie, elf::PIE::PIE);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -82,6 +85,9 @@ fn test_PIE_DSO(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.pie, elf::PIE::DSO);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -90,6 +96,9 @@ fn test_PIE_REL(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.pie, elf::PIE::REL);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -97,6 +106,9 @@ fn test_PIE_none(){
     let buf = file_to_buf("./tests/binaries/elf/nolibc".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.pie, elf::PIE::None);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -108,6 +120,9 @@ fn test_fortify_na(){
         assert_eq!(elf_result.fortified, 0);
         assert_eq!(elf_result.fortifiable, 0);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -117,6 +132,9 @@ fn test_fortify_no(){
         assert_eq!(elf_result.fortify, elf::Fortify::None);
         assert_eq!(elf_result.fortified, 0);
         assert_eq!(elf_result.fortifiable, 3);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -128,6 +146,9 @@ fn test_fortify_partial(){
         assert_eq!(elf_result.fortified, 1);
         assert_eq!(elf_result.fortifiable, 2);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -138,6 +159,9 @@ fn test_fortify_full(){
         assert_eq!(elf_result.fortified, 2);
         assert_eq!(elf_result.fortifiable, 2);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -145,6 +169,9 @@ fn test_nx_Na(){
     let buf = file_to_buf("./tests/binaries/elf/rel.o".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.nx, elf::Nx::Na);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -154,6 +181,9 @@ fn test_nx_disabled(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.nx, elf::Nx::Disabled);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -161,6 +191,9 @@ fn test_nx_enabled(){
     let buf = file_to_buf("./tests/binaries/elf/fszero".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.nx, elf::Nx::Enabled);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -173,6 +206,9 @@ fn test_rpath_exists(){
         assert_eq!(elf_result.rpath.len(), rpath_vec.len());
         assert_eq!(elf_result.rpath[0], rpath_val);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -183,6 +219,9 @@ fn test_rpath_none(){
         let rpath_vec = shared::VecRpath::new(vec![rpath_val.clone()]);
         assert_eq!(elf_result.rpath.len(), rpath_vec.len());
         assert_eq!(elf_result.rpath[0], rpath_val);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -195,6 +234,9 @@ fn test_runpath_exists(){
         assert_eq!(elf_result.rpath.len(), runpath_vec.len());
         assert_eq!(elf_result.runpath[0], runpath_val);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -206,6 +248,9 @@ fn test_runpath_none(){
         assert_eq!(elf_result.rpath.len(), runpath_vec.len());
         assert_eq!(elf_result.runpath[0], runpath_val);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -213,6 +258,9 @@ fn test_symbol_count(){
     let buf = file_to_buf("./tests/binaries/elf/sstack".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(*elf_result.symbol_count, 87);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -222,6 +270,9 @@ fn test_no_symbols(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(*elf_result.symbol_count, 0);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -229,6 +280,9 @@ fn test_clang_cfi_exists(){
     let buf = file_to_buf("./tests/binaries/elf/cfi".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.clang_cfi, true);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -238,6 +292,9 @@ fn test_no_clang_cfi(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.clang_cfi, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -246,6 +303,9 @@ fn test_clang_safestack_exists(){
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.clang_safestack, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -253,6 +313,9 @@ fn test_no_clang_safestack(){
     let buf = file_to_buf("./tests/binaries/elf/partial".into());
     if let Ok(BinResults::Elf(elf_result)) = checksec_core(&buf){
         assert_eq!(elf_result.clang_safestack, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 

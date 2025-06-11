@@ -297,7 +297,7 @@ impl fmt::Display for ASLR {
 /// object and a read-only memory-mapped version of the original file
 /// must be provided for evaluating PE32/32+ binaries.
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CheckSecResults {
     /// Address Space Layout Randomization
     pub aslr: ASLR,

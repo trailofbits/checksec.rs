@@ -222,7 +222,7 @@ impl fmt::Display for Fortify {
 /// }
 /// ```
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CheckSecResults {
     /// Stack Canary (*CFLAGS=*`-fstack-protector*`)
     pub canary: bool,

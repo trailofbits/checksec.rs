@@ -1,21 +1,6 @@
-use std::process;
-use std::path::Path;
-use std::fs;
-
-use checksec::{pe, shared, checksec_core, BinResults};
-
-// util function to convert file contents to buffer of bytes
-fn file_to_buf(filename: String) -> Vec<u8>{
-    let path = Path::new(&filename);
-    if let Ok(buf) = fs::read(path){
-        return buf;
-    }
-    else{
-        println!("reading of provided file path failed, test suite is misconfigured");
-        process::exit(1)
-    }
-}
-
+use checksec::{pe, shared, checksec_core, shared::BinResults};
+mod utils;
+use utils::file_to_buf;
 
 // pe32+-related tests
 #[test]
@@ -33,6 +18,9 @@ fn test_dynamic_base_present(){
     let buf = file_to_buf("./tests/binaries/pe/debug_directories-clang_lld.exe.bin".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.dynamic_base, true);
+    } 
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -42,6 +30,9 @@ fn test_no_dynamic_base(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.dynamic_base, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -50,6 +41,9 @@ fn test_aslr_high_entropy(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.aslr, pe::ASLR::HighEntropyVa);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -57,6 +51,9 @@ fn test_aslr_wo_high_entropy(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-highentropyva.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.aslr, pe::ASLR::DynamicBase);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -67,6 +64,9 @@ fn test_no_aslr(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.aslr, pe::ASLR::None);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -74,6 +74,9 @@ fn test_high_entropy_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-nxcompat.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.high_entropy_va, true);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -83,6 +86,9 @@ fn test_no_high_entropy(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.high_entropy_va, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -90,6 +96,9 @@ fn test_no_force_integrity(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-gs.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.force_integrity, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -101,6 +110,9 @@ fn test_has_isolation(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.isolation, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 // TODO: Find a PE that does not have isolation
@@ -111,6 +123,9 @@ fn test_Nx_present(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.nx, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -119,6 +134,9 @@ fn test_no_Nx(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.nx, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -126,6 +144,9 @@ fn test_Seh_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-cetcompat.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.seh, true);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -137,6 +158,9 @@ fn test_cfg_present(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.cfg, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -144,6 +168,9 @@ fn test_no_cfg(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.cfg, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -155,6 +182,9 @@ fn test_no_rfg(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.rfg, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 // TODO: Find a PE that has safeseh
@@ -165,6 +195,9 @@ fn test_no_safeseh(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.safeseh, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -172,6 +205,9 @@ fn test_gs_present(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-yes-cfg.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.gs, true);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -181,6 +217,9 @@ fn test_no_gs(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.gs, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -189,6 +228,9 @@ fn test_authenticode_present(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.gs, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -196,6 +238,9 @@ fn test_no_authenticode(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-no-highentropyva.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.gs, true);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -207,6 +252,9 @@ fn test_no_dotnet(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.dotnet, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -215,6 +263,9 @@ fn test_is_cet_compat(){
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.cet, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -222,6 +273,9 @@ fn test_not_cet_compat(){
     let buf = file_to_buf("./tests/binaries/pe/pegoat-ineffective-cfg-no-dynamicbase.exe".into());
     if let Ok(BinResults::Pe(pe_result)) = checksec_core(&buf){
         assert_eq!(pe_result.cet, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 

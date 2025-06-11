@@ -1,21 +1,6 @@
-use std::process;
-use std::path::Path;
-use std::fs;
-
-use checksec::{macho, shared, checksec_core, BinResults};
-
-// util function to convert file contents to buffer of bytes
-fn file_to_buf(filename: String) -> Vec<u8>{
-    let path = Path::new(&filename);
-    if let Ok(buf) = fs::read(path){
-        return buf;
-    }
-    else{
-        println!("reading of provided file path failed, test suite is misconfigured");
-        process::exit(1)
-    }
-}
-
+use checksec::{macho, shared, checksec_core, shared::BinResults};
+mod utils;
+use utils::file_to_buf;
 
 // Mach-O related tests
 #[test]
@@ -34,6 +19,9 @@ fn test_has_PIE(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.pie, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -41,6 +29,9 @@ fn test_no_PIE(){
     let buf = file_to_buf("./tests/binaries/Mach-O/rel_cl.o".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.pie, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -50,6 +41,9 @@ fn test_has_arc(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.arc, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -57,6 +51,9 @@ fn test_no_arc(){
     let buf = file_to_buf("./tests/binaries/Mach-O/no_canary".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.arc, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -66,6 +63,9 @@ fn test_has_canary(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.canary, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -73,6 +73,9 @@ fn test_no_canary(){
     let buf = file_to_buf("./tests/binaries/Mach-O/no_canary".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.canary, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -82,6 +85,9 @@ fn test_has_codesig(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.code_signature, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -89,6 +95,9 @@ fn test_no_codesig(){
     let buf = file_to_buf("./tests/binaries/Mach-O/nosig".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.code_signature, false);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -100,6 +109,9 @@ fn test_not_encrypted(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.code_signature, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -108,6 +120,9 @@ fn test_has_fortify(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.fortify, true);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -115,6 +130,9 @@ fn test_fortified_count(){
     let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.fortified, 1);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -125,6 +143,9 @@ fn test_not_fortified(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.fortify, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 
@@ -133,6 +154,9 @@ fn test_NX_stack(){
     let buf = file_to_buf("./tests/binaries/Mach-O/basic".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.nx_stack, true);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -144,6 +168,9 @@ fn test_X_heap(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.nx_heap, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 // TODO: Find a binary with non-executable heap
@@ -154,6 +181,9 @@ fn test_no_restrict(){
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.restrict, false);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -161,6 +191,9 @@ fn test_restricted(){
     let buf = file_to_buf("./tests/binaries/Mach-O/restrict".into());
     if let Ok(BinResults::Macho(macho_result)) = checksec_core(&buf){
         assert_eq!(macho_result.restrict, true);
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 
@@ -172,6 +205,9 @@ fn test_no_rpath(){
         assert_eq!(macho_result.rpath.len(), runpath_vec.len());
         assert_eq!(macho_result.rpath[0], shared::Rpath::None);
     }
+    else {
+        panic!("Checksec failed");
+    }
 }
 
 #[test]
@@ -182,6 +218,9 @@ fn test_rpath(){
         assert_eq!(macho_result.rpath.len(), runpath_vec.len());
         assert_eq!(macho_result.rpath[0], shared::Rpath::Yes("@executable_path/lib".into()));
         assert_eq!(macho_result.rpath[1], shared::Rpath::Yes("./src".into()));
+    }
+    else {
+        panic!("Checksec failed");
     }
 }
 

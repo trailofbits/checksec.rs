@@ -33,7 +33,7 @@ const MH_NO_HEAP_EXECUTION: u32 = 0x0100_0000;
 /// }
 /// ```
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CheckSecResults {
     /// Automatic Reference Counting
     pub arc: bool,

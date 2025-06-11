@@ -66,35 +66,50 @@ pub mod pe;
 pub mod shared;
 
 #[derive(Serialize, Deserialize)]
-pub enum BinResults {
-    Elf(elf::CheckSecResults),
-    Pe(pe::CheckSecResults),
-    Macho(macho::CheckSecResults),
+struct ChecksecResult{
+    binresult: shared::BinResults,
+    compressed_data: String,
 }
 
+// This is ugly, refactor :)
 #[wasm_bindgen]
 pub fn checksec (buffer: &[u8]) -> Result<JsValue, JsValue> {
     match checksec_core(buffer) {
-        Ok(result) => Ok(serde_wasm_bindgen::to_value(&result)?),
+        Ok(result) =>
+            match shared::compress_results(&result) {
+                Ok(compress_result) => {
+                    let output = ChecksecResult {binresult: result, compressed_data: compress_result};
+                    Ok(serde_wasm_bindgen::to_value(&output)?)
+                }
+                Err(compress_result) => Err(serde_wasm_bindgen::to_value(&compress_result)?),
+            }
         Err(result) => Err(serde_wasm_bindgen::to_value(&result)?),
     }
 } 
 
 
-pub fn checksec_core (buffer: &[u8]) -> Result<BinResults, String> {
+#[wasm_bindgen]
+pub fn checksec_decompress (buffer: &[u8]) -> Result<JsValue, JsValue> {
+    match shared::decompress_results(buffer) {
+        Ok(result) => Ok(serde_wasm_bindgen::to_value(&result)?),
+        Err(result) => Err(serde_wasm_bindgen::to_value(&result)?),
+    }
+} 
+
+pub fn checksec_core (buffer: &[u8]) -> Result<shared::BinResults, String> {
     match Object::parse(&buffer){
         Ok(Object::Elf(elf)) => {
             let result = elf::CheckSecResults::parse(&elf, &buffer);
-            Ok(BinResults::Elf(result))
+            Ok(shared::BinResults::Elf(result))
         },
         Ok(Object::PE(pe)) => {
             let result = pe::CheckSecResults::parse(&pe, &buffer);
-            Ok(BinResults::Pe(result))
+            Ok(shared::BinResults::Pe(result))
         },
         Ok(Object::Mach(mach)) => match mach {
             Mach::Binary(mach) => {
                 let result = macho::CheckSecResults::parse(&mach); 
-                Ok(BinResults::Macho(result))
+                Ok(shared::BinResults::Macho(result))
             }
             _ => { Err("fat binaries currently not supported".into()) }
         },
