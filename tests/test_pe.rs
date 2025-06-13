@@ -1,4 +1,4 @@
-use checksec::{pe, shared, checksec_core, shared::BinResults};
+use checksec::{pe, shared, checksec_core, BinResults};
 mod utils;
 use utils::file_to_buf;
 
